@@ -1,0 +1,42 @@
+name: RAFCODE Java L0 bytecode gates
+on:
+  pull_request:
+    paths:
+      - 'authorial/raf_l0/java/**'
+      - '.github/workflows/raf-l0-java.yml'
+  push:
+    paths:
+      - 'authorial/raf_l0/java/**'
+      - '.github/workflows/raf-l0-java.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bytecode:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Compile Java 8 compatible bytecode
+        run: |
+          set -eu
+          mkdir -p build/java_l0
+          javac -version
+          javac --release 8 -g:none -d build/java_l0 \
+            authorial/raf_l0/java/src/rafcode/l0/RafL0.java \
+            authorial/raf_l0/java/tests/rafcode/l0/RafL0Test.java
+      - name: Inspect core bytecode for object allocation opcodes
+        run: |
+          set -eu
+          javap -classpath build/java_l0 -c -p rafcode.l0.RafL0 > build/java_l0/disassembly.txt
+          if grep -E ':[[:space:]]+(new|newarray|anewarray|multianewarray|invokedynamic)[[:space:]]' build/java_l0/disassembly.txt; then
+            echo 'Allocation/dynamic instruction in L0 core'; exit 1
+          fi
+          if grep -E ':[[:space:]]+invoke(static|virtual|interface)[[:space:]]' build/java_l0/disassembly.txt; then
+            echo 'Unexpected method calls in L0 core'; exit 1
+          fi
+      - name: Hosted functional and adversarial tests
+        run: |
+          set -eu
+          java -cp build/java_l0 rafcode.l0.RafL0Test
