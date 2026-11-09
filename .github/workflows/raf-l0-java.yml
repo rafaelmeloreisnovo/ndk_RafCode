@@ -25,7 +25,8 @@ jobs:
           javac -version
           javac --release 8 -g:none -d build/java_l0 \
             authorial/raf_l0/java/src/rafcode/l0/RafL0.java \
-            authorial/raf_l0/java/tests/rafcode/l0/RafL0Test.java
+            authorial/raf_l0/java/tests/rafcode/l0/RafL0Test.java \
+            authorial/raf_l0/java/tests/rafcode/l0/RafL0ProbeTest.java
       - name: Inspect core bytecode for object allocation opcodes
         run: |
           set -eu
@@ -40,3 +41,4 @@ jobs:
         run: |
           set -eu
           java -cp build/java_l0 rafcode.l0.RafL0Test
+          java -cp build/java_l0 rafcode.l0.RafL0ProbeTest
