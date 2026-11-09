@@ -1,0 +1,52 @@
+name: RAFCODE L0 freestanding object gates
+on:
+  pull_request:
+    paths:
+      - "authorial/raf_l0/**"
+      - ".github/workflows/raf-l0-freestanding.yml"
+  push:
+    paths:
+      - "authorial/raf_l0/**"
+      - ".github/workflows/raf-l0-freestanding.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-linux-gnu
+          - armv7a-linux-androideabi21
+          - aarch64-linux-android21
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Compile freestanding C object files
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -eu
+          CC=clang OUT=build/l0 sh ./authorial/raf_l0/build.sh
+      - name: Verify objects have no undefined imports
+        run: |
+          set -eu
+          for obj in build/l0/*.o; do
+            readelf -h "$obj"
+            if [ -n "$(nm -u "$obj")" ]; then
+              echo "Unexpected imports in $obj"
+              nm -u "$obj"
+              exit 1
+            fi
+          done
+      - name: Hosted functional tests (x86_64 only)
+        if: matrix.target == 'x86_64-linux-gnu'
+        run: |
+          set -eu
+          clang -std=c11 -O2 -Wall -Wextra -Wconversion -Wshadow -Werror \
+            authorial/raf_l0/tests/test_l0.c build/l0/raf_crc32.o \
+            build/l0/raf_be32.o -o build/l0/test_l0
+          ./build/l0/test_l0
