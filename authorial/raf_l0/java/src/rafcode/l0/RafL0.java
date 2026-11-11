@@ -86,7 +86,7 @@ public final class RafL0 {
         long map = (bytes[off+52] & 255L) | ((bytes[off+53] & 255L) << 8) |
                    ((bytes[off+54] & 255L) << 16) | ((bytes[off+55] & 255L) << 24);
         if (size != len || header != 112 || endian != 0x12345678L ||
-            (map != 0 && (map < 112 || map >= size || (map & 3L) != 0)))
+            (map < 112 || map > size - 4 || (map & 3L) != 0))
             return MALFORMED;
         output[slot] = version;
         output[slot+1] = (int)size;
@@ -144,6 +144,7 @@ public final class RafL0 {
             }
         }
         if (phnum == 65535 || (shnum == 0 && shoff != 0)) return UNSUPPORTED;
+        if (phnum == 0 && phoff != 0) return MALFORMED;
         if (phnum != 0 && (phentsize < (cls == 1 ? 32 : 56) ||
             phoff < min || phoff > len || (long)phnum * phentsize > len - phoff))
             return MALFORMED;
