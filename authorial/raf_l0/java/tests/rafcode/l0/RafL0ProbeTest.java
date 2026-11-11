@@ -54,6 +54,8 @@ public final class RafL0ProbeTest {
         u32(d,32,128,true);u32(d,36,111,true);check(RafL0.probeDex(d,0,128,out,1)==RafL0.MALFORMED);
         u32(d,36,112,true);u32(d,40,0x78563412L,true);check(RafL0.probeDex(d,0,128,out,1)==RafL0.MALFORMED);
         u32(d,40,0x12345678,true);u32(d,52,115,true);check(RafL0.probeDex(d,0,128,out,1)==RafL0.MALFORMED);
+        u32(d,52,0,true);check(RafL0.probeDex(d,0,128,out,1)==RafL0.MALFORMED);
+        u32(d,52,126,true);check(RafL0.probeDex(d,0,128,out,1)==RafL0.MALFORMED);
         check(out[1]==40); // previous successful DEX 040 value retained after every failure
         check(RafL0.probeDex(null,0,0,out,1)==RafL0.BAD_ARG);
         check(RafL0.probeDex(d,-1,128,out,1)==RafL0.BAD_ARG);
@@ -70,6 +72,12 @@ public final class RafL0ProbeTest {
             u16(e,base,cls==1?52:64,le);
             u16(e,base+4,100,le);check(RafL0.probeElf(e,0,e.length,out,1)==RafL0.MALFORMED);
             u16(e,base+4,2,le);check(RafL0.probeElf(e,0,e.length,out,1)==RafL0.OK);
+            u16(e,base+4,0,le);
+            check(RafL0.probeElf(e,0,e.length,out,1)==RafL0.MALFORMED);
+            if(cls==1)u32(e,28,0,le);else u64(e,32,0,le);
+            check(RafL0.probeElf(e,0,e.length,out,1)==RafL0.OK);
+            if(cls==1)u32(e,28,64,le);else u64(e,32,64,le);
+            u16(e,base+4,2,le);
             byte[] pad=new byte[280];System.arraycopy(e,0,pad,7,e.length);
             check(RafL0.probeElf(pad,7,e.length,out,1)==RafL0.OK);
         }
